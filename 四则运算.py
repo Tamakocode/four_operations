@@ -1,105 +1,161 @@
 import argparse
 import random
 from fractions import Fraction
-from sympy import simplify, Symbol, Eq
+from sympy import simplify, sympify
 
 # 定义四则运算符号
 OPERATORS = ['+', '-', '×', '÷']
 
 
 # 生成一个算术表达式
-def generate_expression(max_value):
-    # 随机选择运算符
-    operator = random.choice(OPERATORS)
-    if operator == '÷':  # 如果是除法运算
-        # 随机生成分母
-        denominator = random.randint(2, max_value)
-        # 随机生成分子
-        numerator = random.randint(1, denominator - 1)
-        # 生成第二个真分数
-        second_fraction = Fraction(numerator, denominator)
-        # 生成第一个真分数
-        first_number = random.randint(1, max_value // numerator)
-        first_fraction = Fraction(first_number * numerator, denominator)
-        # 组合成算术表达式
-        expression = f"{first_fraction} {operator} {second_fraction}"
-    else:  # 其他运算
-        # 随机生成两个数
-        first_number = random.randint(1, max_value)
-        second_number = random.randint(1, max_value)
-        # 组合成算术表达式
-        expression = f"{first_number} {operator} {second_number}"
+def generate_expression(max_value, num_operands):
+    # 随机生成操作数
+    int_operands = [random.randint(1, max_value) for num in range(num_operands)]
+    int_operands = [str(num) for num in int_operands]
+    frc_operands = [generate_fraction(max_value) for num in range(num_operands)]
+    operands = int_operands + frc_operands
+    random.shuffle(operands)
+    print(operands)
+
+    # 随机生成运算符
+    operators = [random.choice(OPERATORS) for num in range(num_operands - 1)]
+    print(operators)
+
+    mark = random.randint(1, 100)
+    if mark in range(1, 40):
+        operands_list = operands
+    elif mark in range(41, 60):
+        operands_list = int_operands
+    else:
+        operands_list = frc_operands
+
+    expression = ' '.join([operands_list[i] + " " + operators[i] for i in range(num_operands - 1)] + [operands[-1]])
     return expression
 
 
-# 简化表达式
-def simplify_expression(expression):
-    # 将除法符号替换为合法的除法运算符 "/"
-    expression = expression.replace('÷', '/')
-    # 将乘法符号替换为合法的乘法运算符 "*"
-    expression = expression.replace('×', '*')
-    # 使用 Sympy 简化表达式
-    simplified_expr = simplify(expression)
-    # 将简化后的表达式转换为字符串形式
-    simplified_expr_str = str(simplified_expr)
-    return simplified_expr_str
+def generate_fraction(max_value):
+    # 随机生成分母
+    denominator = random.randint(2, max_value)
+    # 随机生成分子
+    numerator = random.randint(1, denominator - 1)
+    # 生成第一个真分数
+    fraction = f"({numerator}/{denominator})"
+    return fraction
 
 
 # 生成指定数量的题目
 def generate_exercises(num_exercises, max_value):
     exercises = set()
-    while len(exercises) < num_exercises:
-        # 生成一个表达式
-        expression = generate_expression(max_value)
-        # 简化表达式，确保所有的除法操作都使用合法的除法运算符 "/"
-        simplified_expression = simplify_expression(expression)
-        # 直接使用简化后的表达式作为条件
-        if '=' in simplified_expression:
+    count = 0
+    while True:
+        expression = generate_expression(max_value, random.randint(2, 5))
+        expression_test = expression
+        expression_test = expression_test.replace('×', '*').replace('÷', '/')
+        answer_test = simplify(expression_test)
+        if answer_test >= 0:
             exercises.add(expression)
-    return exercises
+            count += 1
+
+        if count == num_exercises:
+            return exercises
 
 
 # 计算表达式的答案
 def calculate_answer(expression):
-    # 将表达式中的乘除号替换为Python中的乘除号
     expression = expression.replace('×', '*').replace('÷', '/')
-    # 使用eval计算表达式的值，并将结果转换为真分数形式
-    answer = Fraction(eval(expression))
+    answer = simplify(expression)
     return answer
 
 
-def main():
-    # 解析命令行参数
-    parser = argparse.ArgumentParser(description="生成四则运算题目.")
-    parser.add_argument('-n', type=int, help="生成题目的数量.")
-    parser.add_argument('-r', type=int, help="数值范围（不包括该数）.")
-    args = parser.parse_args()
+# 判断答案是否正确
+def is_correct(expression, answer_str):
+    try:
+        # 将表达式中的乘除号替换为Python中的乘除号
+        expression = expression.replace('×', '*').replace('÷', '/')
+        # 计算表达式的值
+        calculated_answer = simplify(expression)
+        # 将输入的答案字符串转换为SymPy对象
+        answer = sympify(answer_str)
+        # 判断计算得到的答案与输入的答案是否相同
+        return calculated_answer == answer
+    except Exception as e:
+        # 如果出现任何错误（如表达式或答案字符串格式不正确），打印错误并返回False
+        print(f"Error: {e}")
+        return False
 
-    # 如果缺少参数，则报错并给出帮助信息
-    if not args.n or not args.r:
-        parser.error("参数 -n 和 -r 是必须的.")
 
-    # 生成题目和答案
-    exercises = generate_exercises(args.n, args.r)
+# 生成题目与答案
+def generate_questions_and_answers(args_n, args_r):
+    exercises = generate_exercises(args_n, args_r)
     answers = []
 
-    print("1")
-
-    # 将题目和答案写入文件
     with open('Exercises.txt', 'w') as exercise_file, open('Answers.txt', 'w') as answer_file:
-
-        print("2")
-
         for i, exercise in enumerate(exercises, start=1):
-            # 写入题目到文件
             exercise_file.write(f"四则运算题目{i}: {exercise}\n")
-            # 计算答案
             answer = calculate_answer(exercise)
             answers.append(answer)
-            # 写入答案到文件
             answer_file.write(f"{answer}\n")
 
-    print(f"{args.n} 题目已生成.")
+    print(f"{args_n} 题目已生成.")
+
+
+# 检查答案
+def check_answers(args_e, args_a):
+    # 读取题目文件和答案文件
+    with open(args_e, 'r') as exercise_file, open(args_a, 'r') as answer_file:
+        exercises = exercise_file.readlines()
+        answers = answer_file.readlines()
+
+    correct_exercises = []
+    wrong_exercises = []
+
+    # 判断每个题目的答案是否正确
+    for i, (exercise, answer) in enumerate(zip(exercises, answers), start=1):
+        exercise = exercise.strip().split(': ')[1]
+        answer = Fraction(answer.strip())
+
+        if is_correct(exercise, answer):
+            correct_exercises.append(i)
+        else:
+            wrong_exercises.append(i)
+
+    # 输出统计结果到文件Grade.txt
+    with open('Grade.txt', 'w') as grade_file:
+        grade_file.write(f"Correct: {len(correct_exercises)} ({', '.join(map(str, correct_exercises))})\n")
+        grade_file.write(f"Wrong: {len(wrong_exercises)} ({', '.join(map(str, wrong_exercises))})\n")
+
+
+# 生成与检查同时
+def generate_and_check(args_n, args_r, args_e, args_a):
+    generate_questions_and_answers(args_n, args_r)
+    check_answers(args_e, args_a)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="生成和统计四则运算题目答案的正确性.")
+    parser.add_argument('-n', type=int, help="生成题目的数量.")
+    parser.add_argument('-r', type=int, help="数值范围（不包括该数）.")
+    parser.add_argument('-e', type=str, help="题目文件名.")
+    parser.add_argument('-a', type=str, help="答案文件名.")
+    args = parser.parse_args()
+
+    if args.n and args.r:
+        generate_questions_and_answers(args.n, args.r)
+    elif args.e and args.a:
+        check_answers(args.e, args.a)
+    elif args.n and args.r and args.e and args.a:
+        generate_and_check(args.n, args.r, args.e, args.a)
+    else:
+        parser.error(
+            '''
+                        1.若只需要生成题目与答案：python 【脚本名.py】 -n 10 -r 10
+                          -n -----> 生成的题目数量
+                          -r -----> 最大数值
+                        2.统计题目与答案的正确与否：python 【脚本名.py】 -e 【题目文件】 -a 【答案文件】 
+                          -e -----> 题目文件.txt
+                          -a -----> 答案文件.txt
+                        3.两者同时：python 【脚本名.py】 -n 10 -r 10 -e 【题目文件】 -a 【答案文件】
+        ''')
 
 
 if __name__ == "__main__":
