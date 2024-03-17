@@ -1,49 +1,32 @@
-import random
-from sympy import simplify, cancel
+def change_to_true(improper_fraction):
+    if '/' not in improper_fraction:
+        return improper_fraction
+    numerator = int(improper_fraction.strip().split('/')[0])
+    denominator = int(improper_fraction.strip().split('/')[1])
 
-OPERATORS = ['+', '-', '×', '÷']
+    whole_part = numerator // denominator
+    fraction_part = f"{numerator % denominator}/{denominator}"
 
-
-def generate_expression(max_value, num_operands):
-    # 随机生成操作数
-    int_operands = [random.randint(1, max_value) for num in range(num_operands)]
-    int_operands = [str(num) for num in int_operands]
-    frc_operands = [generate_fraction(max_value) for num in range(num_operands)]
-    operands = int_operands + frc_operands
-    random.shuffle(operands)
-    print(operands)
-
-    # 随机生成运算符
-    operators = [random.choice(OPERATORS) for num in range(num_operands - 1)]
-    print(operators)
-
-    mark = random.randint(1, 100)
-    if mark in range(1, 40):
-        operands_list = operands
-    elif mark in range(41, 60):
-        operands_list = int_operands
-    else:
-        operands_list = frc_operands
-
-    expression = ' '.join([operands_list[i] + " " + operators[i] for i in range(num_operands - 1)] + [operands[-1]])
-    return expression
+    true_fraction = f"{whole_part}'{fraction_part}"
+    return true_fraction
 
 
-def generate_fraction(max_value):
-    # 随机生成分母
-    denominator = random.randint(2, max_value)
-    # 随机生成分子
-    numerator = random.randint(1, denominator - 1)
-    # 生成第一个真分数
-    fraction = f"({numerator}/{denominator})"
-    return fraction
+# 真变假
+def change_to_false(true_fraction):
+    if '/' not in true_fraction:
+        return true_fraction
+    parts = true_fraction.split("'")
+    whole_part = int(parts[0])
+    fraction_part = parts[1]
+
+    numerator = whole_part * int(fraction_part.split('/')[1]) + int(fraction_part.split('/')[0])
+    denominator = int(fraction_part.split('/')[1])
+
+    improper_fraction = f"{numerator}/{denominator}"
+    return improper_fraction
 
 
-# 示例用法
-max_value = 10
-num_operands = 3
-for i in range(10):
-    expression = generate_expression(max_value, random.randint(2, 5))
-    expression = expression.replace('÷', '/').replace('×', '*')
-    print(expression, "=", simplify(expression))
-    print("---------------------------------")
+print(change_to_true('99/4'))
+print(change_to_false('4\'1/3'))
+print(change_to_false('77'))
+print(change_to_true('66'))

@@ -7,6 +7,37 @@ from sympy import simplify, sympify
 OPERATORS = ['+', '-', '×', '÷']
 
 
+# 假变真
+def change_to_true(improper_fraction):
+    if '/' not in improper_fraction:
+        return improper_fraction
+    numerator = int(improper_fraction.strip().split('/')[0])
+    denominator = int(improper_fraction.strip().split('/')[1])
+    if numerator < denominator:
+        return improper_fraction
+    whole_part = numerator // denominator
+    fraction_part = f"{numerator % denominator}/{denominator}"
+
+    true_fraction = f"{whole_part}'{fraction_part}"
+    return true_fraction
+
+
+# 真变假
+def change_to_false(true_fraction):
+    if '\'' not in true_fraction:
+        return true_fraction
+
+    parts = true_fraction.strip().split("'")
+    whole_part = int(parts[0])
+    fraction_part = parts[1]
+
+    numerator = whole_part * int(fraction_part.split('/')[1]) + int(fraction_part.split('/')[0])
+    denominator = int(fraction_part.split('/')[1])
+
+    improper_fraction = f"{numerator}/{denominator}"
+    return improper_fraction
+
+
 # 生成一个算术表达式
 def generate_expression(max_value, num_operands):
     # 随机生成操作数
@@ -15,16 +46,14 @@ def generate_expression(max_value, num_operands):
     frc_operands = [generate_fraction(max_value) for num in range(num_operands)]
     operands = int_operands + frc_operands
     random.shuffle(operands)
-    print(operands)
 
     # 随机生成运算符
     operators = [random.choice(OPERATORS) for num in range(num_operands - 1)]
-    print(operators)
 
-    mark = random.randint(1, 100)
-    if mark in range(1, 40):
+    mark = random.randint(1, 30000)
+    if mark in range(1, 10000):
         operands_list = operands
-    elif mark in range(41, 60):
+    elif mark in range(10001, 20000):
         operands_list = int_operands
     else:
         operands_list = frc_operands
@@ -46,18 +75,15 @@ def generate_fraction(max_value):
 # 生成指定数量的题目
 def generate_exercises(num_exercises, max_value):
     exercises = set()
-    count = 0
-    while True:
+    while len(exercises) < num_exercises:
         expression = generate_expression(max_value, random.randint(2, 5))
         expression_test = expression
         expression_test = expression_test.replace('×', '*').replace('÷', '/')
         answer_test = simplify(expression_test)
         if answer_test >= 0:
             exercises.add(expression)
-            count += 1
 
-        if count == num_exercises:
-            return exercises
+    return exercises
 
 
 # 计算表达式的答案
@@ -88,15 +114,14 @@ def is_correct(expression, answer_str):
 def generate_questions_and_answers(args_n, args_r):
     exercises = generate_exercises(args_n, args_r)
     answers = []
-
     with open('Exercises.txt', 'w') as exercise_file, open('Answers.txt', 'w') as answer_file:
         for i, exercise in enumerate(exercises, start=1):
             exercise_file.write(f"四则运算题目{i}: {exercise}\n")
             answer = calculate_answer(exercise)
             answers.append(answer)
-            answer_file.write(f"{answer}\n")
+            answer_file.write(f"{change_to_true(str(answer))}\n")
 
-    print(f"{args_n} 题目已生成.")
+    print(f"{args_n} 条题目已生成.")
 
 
 # 检查答案
@@ -111,7 +136,9 @@ def check_answers(args_e, args_a):
 
     # 判断每个题目的答案是否正确
     for i, (exercise, answer) in enumerate(zip(exercises, answers), start=1):
-        exercise = exercise.strip().split(': ')[1]
+        exercise = exercise.strip().split(': ')[1]  # 四则运算题目1: 8 × 8 - 8 + (5/9) --> 8 × 8 - 8 + (5/9)
+
+        answer = change_to_false(answer)    # 真分数转假分数
         answer = Fraction(answer.strip())
 
         if is_correct(exercise, answer):
@@ -120,9 +147,12 @@ def check_answers(args_e, args_a):
             wrong_exercises.append(i)
 
     # 输出统计结果到文件Grade.txt
+    # map转字符串，并记录到文件中
     with open('Grade.txt', 'w') as grade_file:
         grade_file.write(f"Correct: {len(correct_exercises)} ({', '.join(map(str, correct_exercises))})\n")
         grade_file.write(f"Wrong: {len(wrong_exercises)} ({', '.join(map(str, wrong_exercises))})\n")
+
+    print("检查完毕")
 
 
 # 生成与检查同时
@@ -139,9 +169,9 @@ def main():
     parser.add_argument('-a', type=str, help="答案文件名.")
     args = parser.parse_args()
 
-    if args.n and args.r:
+    if args.n and args.r and not args.e and not args.a:
         generate_questions_and_answers(args.n, args.r)
-    elif args.e and args.a:
+    elif not args.n and not args.r and args.e and args.a:
         check_answers(args.e, args.a)
     elif args.n and args.r and args.e and args.a:
         generate_and_check(args.n, args.r, args.e, args.a)
