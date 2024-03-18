@@ -80,7 +80,7 @@ def generate_exercises(num_exercises, max_value):
         expression_test = expression
         expression_test = expression_test.replace('×', '*').replace('÷', '/')
         answer_test = simplify(expression_test)
-        if answer_test >= 0:
+        if answer_test >= 0:                 # 只收录结果大于0的表达式
             exercises.add(expression)
 
     return exercises
@@ -89,7 +89,7 @@ def generate_exercises(num_exercises, max_value):
 # 计算表达式的答案
 def calculate_answer(expression):
     expression = expression.replace('×', '*').replace('÷', '/')
-    answer = simplify(expression)
+    answer = simplify(expression)           # 调用simplify模块计算答案
     return answer
 
 
@@ -119,7 +119,7 @@ def generate_questions_and_answers(args_n, args_r):
             exercise_file.write(f"四则运算题目{i}: {exercise}\n")
             answer = calculate_answer(exercise)
             answers.append(answer)
-            answer_file.write(f"{change_to_true(str(answer))}\n")
+            answer_file.write(f"{change_to_true(str(answer))}\n")   # 保存前，实现真假分数的转换
 
     print(f"{args_n} 条题目已生成.")
 
@@ -135,7 +135,7 @@ def check_answers(args_e, args_a):
     wrong_exercises = []
 
     # 判断每个题目的答案是否正确
-    for i, (exercise, answer) in enumerate(zip(exercises, answers), start=1):
+    for i, (exercise, answer) in enumerate(zip(exercises, answers), start=1):  # 迭代器遍历
         exercise = exercise.strip().split(': ')[1]  # 四则运算题目1: 8 × 8 - 8 + (5/9) --> 8 × 8 - 8 + (5/9)
 
         answer = change_to_false(answer)    # 真分数转假分数
@@ -178,13 +178,13 @@ def main():
     else:
         parser.error(
             '''
-                        1.若只需要生成题目与答案：python 【脚本名.py】 -n 10 -r 10
+                        1.若只需要生成题目与答案：四则运算.exe -n 10 -r 10
                           -n -----> 生成的题目数量
                           -r -----> 最大数值
-                        2.统计题目与答案的正确与否：python 【脚本名.py】 -e 【题目文件】 -a 【答案文件】 
+                        2.统计题目与答案的正确与否：四则运算.exe -e 【题目文件】 -a 【答案文件】 
                           -e -----> 题目文件.txt
                           -a -----> 答案文件.txt
-                        3.两者同时：python 【脚本名.py】 -n 10 -r 10 -e 【题目文件】 -a 【答案文件】
+                        3.两者同时：四则运算.exe -n 10 -r 10 -e 【题目文件】 -a 【答案文件】
         ''')
 
 
